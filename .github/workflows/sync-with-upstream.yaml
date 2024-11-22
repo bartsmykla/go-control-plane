@@ -19,20 +19,22 @@ jobs:
     runs-on: ubuntu-latest
     name: Sync with upstream main
     steps:
+    - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      with:
+        fetch-depth: 0
+        persist-credentials: false
     - name: Generate GitHub app token
       id: github-app-token
       uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 # v1.11.0
       with:
         app-id: ${{ secrets.APP_ID }}
         private-key: ${{ secrets.APP_PRIVATE_KEY }}
-    - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
-      with:
-        fetch-depth: 0
-        token: ${{ steps.github-app-token.outputs.token }}
     - name: Sync upstream changes
       id: sync
       uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
       with:
+        git_config_user: ${{ env.GH_USER }}
+        git_config_email: ${{ env.GH_EMAIL }}
         target_sync_branch: main
         target_repo_token: ${{ steps.github-app-token.outputs.token }}
         target_branch_push_args: "-f --tags"
@@ -53,6 +55,7 @@ jobs:
       shell: bash
       run: ".github/scripts/get-version-tags.sh"
     - name: Print tags
+      if: steps.sync.outputs.has_new_commits == 'true'
       run: |
         echo "Current fork tag: ${{ steps.new-version-tag.outputs.released_tag }}"
         echo "Newest upstream tag: ${{ steps.new-version-tag.outputs.main_tag }}"
@@ -61,6 +64,7 @@ jobs:
       if: steps.new-version-tag.outputs.released_tag != steps.new-version-tag.outputs.main_tag
       run: |
         git remote -v
+        git remote set-url origin https://${{ steps.github-app-token.outputs.token }}@github.com/kumahq/go-control-plane.git
         git config user.name "${GH_USER}"
         git config user.email "${GH_EMAIL}"
         git checkout release
