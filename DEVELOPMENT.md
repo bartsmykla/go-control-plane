@@ -30,3 +30,58 @@ The current tag is `v0.13.1-kong-1`. After merging your changes, you want to rel
 `v0.13.1-kong-2`  
 
 After tagging, push the commit to the repository to finalize the release.
+
+## Conflict resolution
+
+It might happen that automatic release job can hit a conflict. In this situation maintainer needs to resolve this manually:
+
+Instruction
+
+1. Fetch current `main` and `release` branch
+```bash
+git fetch origin --tags
+```
+2. Update current main branch with origin
+```bash
+git reset --hard origin/main
+```
+3. Change to the release branch
+```bash
+git checkout release
+git reset --hard origin/release
+```
+4. Remove Untracked Files and Directories
+```bash
+git clean -fd
+```
+5. Get new tag value
+```bash
+./.github/scripts/get-version-tags.sh
+```
+
+Output:
+```bash
+Current release tag prefix: v0.13.1
+Upstream tag: v0.13.2
+New tag: v0.13.2-kong-1
+```
+
+if tags are equal, you are going to see message `"Tags are equal, no need to release"` and you don't need to release/rebase anything.
+
+6. Rebase release branch between tags:
+```bash
+git rebase --onto  <Upstream tag> <Current release tag prefix> release
+```
+7. If you encounter git conflicts, resolve them, and follow git instruction
+* resolve conflicts
+* git add <files>
+* git rebase --continue
+
+8. Tag the commit
+```bash
+git tag <New tag>
+```
+9. Push changes to origin
+```bash
+git push origin release --tags --force-with-lease
+```

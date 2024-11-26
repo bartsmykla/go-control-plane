@@ -1,7 +1,7 @@
 #!/bin/bash
 
 current_tag=$(git tag --list --merged origin/release --sort=-creatordate | head -n 1)
-main_tag=$(git tag --list --merged main --sort=-creatordate | head -n 1)
+main_tag=$(git tag --list --merged origin/main --sort=-creatordate | head -n 1)
 
 # Remove the prefix `v` and `-kong-*` suffix for comparison
 released_tag="${current_tag%-kong-*}"
@@ -9,6 +9,16 @@ currentVersion="${released_tag#v}"
 
 # Main branch won't have -kong-* suffix
 newVersion="${main_tag#v}"
+
+echo "Current release tag prefix: $released_tag"
+echo "Upstream tag: $main_tag"
+new_tag="${main_tag}-kong-1"
+if [[ $current_tag != $new_tag ]]; then
+  echo "New tag: $new_tag"
+else
+  echo "Tags are equal, no need to release"
+  exit 0
+fi
 
 # Convert versions to arrays
 IFS='.' read -r -a currentParts <<< "$currentVersion"
@@ -24,9 +34,8 @@ echo "Upstream tag: $newVersion"
 for i in 0 1 2; do
   if [[ ${newParts[i]:-0} -gt ${currentParts[i]:-0} ]]; then
     echo "The new tag is higher."
-    newVersionTag="${main_tag}-kong-1"
-    echo "New version tag: $newVersionTag"
-    echo "new_tag=$newVersionTag" >> $GITHUB_OUTPUT
+    echo "New version tag: $new_tag"
+    echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
     exit 0
   elif [[ ${newParts[i]:-0} -lt ${currentParts[i]:-0} ]]; then
     echo "The current tag is higher. That shouldn't be that case, please fix tagging."
