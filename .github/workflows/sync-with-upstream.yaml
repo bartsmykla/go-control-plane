@@ -49,6 +49,12 @@ jobs:
     - name: No new commits
       if: steps.sync.outputs.has_new_commits == 'false'
       run: echo "There were no new commits."
+    - name: Refresh repository
+      id: refresh
+      if: steps.sync.outputs.has_new_commits == 'true'
+      shell: bash
+      run: |
+        git fetch --all --tags
     - name: Get new version tag
       id: new-version-tag
       if: steps.sync.outputs.has_new_commits == 'true'
